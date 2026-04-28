@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEO XB — Circle Back</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #CBD5E0; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
+
+  .app { width: 100%; max-width: 390px; min-height: 100vh; background: #F7F9FB; position: relative; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Screens ── */
+  .screen { display: none; flex-direction: column; flex: 1; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ── Scroll area ── */
+  .scroll-area { flex: 1; overflow-y: auto; padding-bottom: 80px; }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* ── Header ── */
+  .header { background: #062C50; padding: 48px 20px 0; flex-shrink: 0; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .logo { color: #fff; font-weight: 800; font-size: 20px; letter-spacing: -0.3px; }
+  .logo span { color: #4DB8E8; }
+  .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #106E9E; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .user-avatar span { color: #fff; font-weight: 800; font-size: 12px; }
+  .page-title { font-weight: 800; font-size: 26px; color: #fff; margin-bottom: 20px; letter-spacing: -0.4px; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; }
+  .tab-btn { font-family: 'Plus Jakarta Sans', sans-serif; background: none; border: none; border-bottom: 2.5px solid transparent; padding: 0 0 14px; margin-right: 24px; font-size: 14px; min-height: 44px; cursor: pointer; color: rgba(255,255,255,0.5); font-weight: 400; white-space: nowrap; transition: color 0.15s; }
+  .tab-btn.active { color: #4DB8E8; font-weight: 800; border-bottom-color: #4DB8E8; }
+
+  /* ── Sub header (back nav) ── */
+  .sub-header { background: #062C50; padding: 48px 20px 0; flex-shrink: 0; }
+  .sub-header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .back-btn { width: 36px; height: 36px; border-radius: 9999px; background: rgba(255,255,255,0.12); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+
+  /* ── Section label ── */
+  .section-label { font-size: 11px; font-weight: 800; color: #5D666F; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; }
+
+  /* ── Event photo placeholder ── */
+  .photo-placeholder { border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .photo-placeholder .circle-bg { position: absolute; border-radius: 50%; }
+  .photo-placeholder .photo-label { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 8px; }
+
+  /* ── Featured card ── */
+  .featured-card { background: #fff; border-radius: 16px; border: 1px solid #DDE3EA; overflow: hidden; margin-bottom: 16px; }
+  .featured-photo-wrap { position: relative; }
+  .event-overlay { position: absolute; top: 12px; left: 12px; background: rgba(6,44,80,0.85); border-radius: 8px; padding: 5px 10px; }
+  .event-overlay-eyebrow { font-size: 11px; font-weight: 800; color: #4DB8E8; letter-spacing: 0.06em; text-transform: uppercase; }
+  .event-overlay-name { font-size: 13px; font-weight: 800; color: #fff; margin-top: 1px; }
+  .attendee-overlay { position: absolute; bottom: 12px; right: 12px; display: flex; align-items: center; gap: 8px; background: rgba(6,44,80,0.75); border-radius: 9999px; padding: 5px 10px 5px 6px; }
+  .attendee-overlay span { font-size: 12px; font-weight: 500; color: #fff; }
+  .featured-body { padding: 16px 16px 0; }
+  .author-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .author-name { font-weight: 800; font-size: 14px; color: #000; }
+  .author-company { font-size: 12px; color: #5D666F; }
+  .author-date { margin-left: auto; font-size: 12px; color: #5D666F; font-weight: 500; }
+  .reflection-text { font-size: 15px; color: #000; line-height: 1.65; margin-bottom: 16px; font-weight: 400; }
+
+  /* ── Details expand ── */
+  .details-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid #EDF2F7; background: none; border-left: none; border-right: none; border-bottom: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .details-toggle span { font-size: 13px; font-weight: 500; color: #106E9E; }
+  .details-panel { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.35s ease, opacity 0.25s ease; }
+  .details-panel.open { max-height: 700px; opacity: 1; }
+  .meta-pills-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .meta-pill { display: inline-flex; align-items: center; gap: 5px; background: #EDF2F7; border-radius: 9999px; padding: 4px 10px; font-size: 12px; color: #5D666F; }
+  .sessions-label { font-size: 11px; font-weight: 800; color: #5D666F; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+  .session-row { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #EDF2F7; }
+  .session-row:last-child { border-bottom: none; }
+  .session-time { width: 52px; flex-shrink: 0; font-size: 11px; color: #5D666F; font-weight: 500; padding-top: 2px; }
+  .session-title { font-size: 13px; font-weight: 800; color: #000; line-height: 1.35; margin-bottom: 2px; }
+  .session-speaker { font-size: 12px; color: #5D666F; }
+  .attended-label { font-size: 11px; font-weight: 800; color: #5D666F; letter-spacing: 0.08em; text-transform: uppercase; margin: 14px 0 10px; }
+  .attendee-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+  .attendee-chip { display: flex; align-items: center; gap: 6px; background: #EDF2F7; border-radius: 9999px; padding: 4px 10px 4px 5px; font-size: 12px; font-weight: 500; color: #000; }
+
+  /* ── Card actions ── */
+  .card-actions { display: flex; flex-direction: column; gap: 10px; padding: 14px 0 16px; border-top: 1px solid #EDF2F7; }
+  .btn-primary { width: 100%; background: #062C50; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 15px; padding: 13px; border-radius: 9999px; border: none; cursor: pointer; min-height: 48px; transition: background 0.15s; }
+  .btn-secondary { width: 100%; background: transparent; color: #062C50; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 500; font-size: 15px; padding: 12px; border-radius: 9999px; border: 1.5px solid #062C50; cursor: pointer; min-height: 48px; transition: background 0.15s; }
+
+  /* ── Up Next teaser ── */
+  .upnext-teaser { width: 100%; display: flex; align-items: center; justify-content: space-between; background: #fff; border-radius: 16px; border: 1px solid #DDE3EA; padding: 16px; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 20px; text-align: left; }
+  .upnext-eyebrow { font-size: 11px; font-weight: 800; color: #5D666F; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+  .upnext-title { font-size: 15px; font-weight: 800; color: #000; }
+  .upnext-sub { font-size: 13px; color: #5D666F; margin-top: 2px; }
+  .upnext-arrow { width: 36px; height: 36px; border-radius: 9999px; background: #062C50; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* ── Reflection feed card ── */
+  .reflection-card { background: #fff; border-radius: 16px; border: 1px solid #DDE3EA; overflow: hidden; margin-bottom: 12px; }
+  .reflection-card.new-post { border-color: #4DB8E8; }
+  .reflection-body { padding: 14px 16px; }
+  .event-pill { display: inline-flex; align-items: center; gap: 5px; background: #EDF2F7; border-radius: 9999px; padding: 3px 10px; margin-bottom: 10px; font-size: 11px; font-weight: 500; color: #5D666F; }
+  .reflection-author-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .ref-author-name { font-weight: 800; font-size: 13px; color: #000; }
+  .ref-author-meta { font-size: 12px; color: #5D666F; }
+  .ref-text { font-size: 14px; color: #000; line-height: 1.6; }
+  .reactions-row { display: flex; align-items: center; gap: 5px; margin-top: 10px; }
+  .reactions-dot { width: 6px; height: 6px; border-radius: 50%; background: #4DB8E8; }
+  .reactions-label { font-size: 12px; color: #5D666F; }
+  .just-posted-label { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .just-posted-dot { width: 6px; height: 6px; border-radius: 50%; background: #4DB8E8; }
+  .just-posted-text { font-size: 11px; font-weight: 800; color: #4DB8E8; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* ── Avatar ── */
+  .avatar { border-radius: 50%; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .avatar span { color: #fff; font-weight: 800; line-height: 1; }
+
+  /* ── Avatar stack ── */
+  .avatar-stack { display: flex; }
+
+  /* ── Sticky compose btn on reflections screen ── */
+  .sticky-compose { position: absolute; bottom: 72px; left: 20px; right: 20px; z-index: 40; }
+
+  /* ── Bottom sheet ── */
+  .sheet-overlay { position: fixed; inset: 0; background: rgba(6,44,80,0); z-index: 200; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; pointer-events: none; transition: background 0.3s ease; }
+  .sheet-overlay.open { background: rgba(6,44,80,0.5); pointer-events: all; }
+  .sheet { background: #fff; border-radius: 20px 20px 0 0; padding: 20px 20px 40px; width: 100%; max-width: 390px; transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); }
+  .sheet-overlay.open .sheet { transform: translateY(0); }
+  .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .sheet-title { font-weight: 800; font-size: 18px; color: #000; }
+  .sheet-close { width: 44px; height: 44px; border-radius: 9999px; background: #EDF2F7; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; color: #5D666F; }
+  .compose-event-pill { display: inline-flex; align-items: center; gap: 6px; background: #EDF2F7; border-radius: 9999px; padding: 5px 12px; margin-bottom: 16px; font-size: 12px; font-weight: 500; color: #5D666F; }
+  .compose-author-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .compose-prompt { font-size: 13px; color: #5D666F; margin-bottom: 10px; line-height: 1.5; }
+  .compose-textarea { width: 100%; min-height: 100px; border: 1.5px solid #DDE3EA; border-radius: 12px; padding: 12px 14px; font-size: 15px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 400; color: #000; resize: none; outline: none; transition: border-color 0.15s; background: #F7F9FB; line-height: 1.55; }
+  .compose-textarea:focus { border-color: #062C50; }
+  .char-count { display: flex; justify-content: flex-end; margin: 6px 0 16px; font-size: 12px; color: #5D666F; }
+  .post-btn { width: 100%; background: #EDF2F7; color: #5D666F; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 16px; padding: 14px; border-radius: 9999px; border: none; cursor: not-allowed; min-height: 50px; transition: background 0.15s, color 0.15s; }
+  .post-btn.enabled { background: #062C50; color: #fff; cursor: pointer; }
+
+  /* ── Bottom nav ── */
+  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 390px; background: #0A3761; display: flex; z-index: 50; }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0 18px; gap: 3px; min-height: 64px; position: relative; background: none; border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .nav-btn.active::before { content: ''; position: absolute; top: 0; left: 25%; right: 25%; height: 2px; background: #106E9E; border-radius: 0 0 2px 2px; }
+  .nav-label { font-size: 11px; color: rgba(255,255,255,0.45); font-weight: 400; }
+  .nav-btn.active .nav-label { color: #fff; font-weight: 500; }
+
+  /* ── Toast ── */
+  .toast { position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%); background: #062C50; color: #fff; font-size: 14px; font-weight: 500; padding: 10px 20px; border-radius: 9999px; white-space: nowrap; pointer-events: none; z-index: 300; opacity: 0; transition: opacity 0.2s; }
+  .toast.show { opacity: 1; }
+
+  svg { display: inline-block; vertical-align: middle; }
+  button { font-family: 'Plus Jakarta Sans', sans-serif; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══════════════════════════════════════
+       SCREEN: HOME
+  ══════════════════════════════════════ -->
+  <div class="screen active" id="screen-home">
+    <div class="header">
+      <div class="header-top">
+        <div class="logo">ceo <span>XB</span></div>
+        <div class="user-avatar"><span>SO</span></div>
+      </div>
+      <div class="page-title">Home</div>
+    </div>
+
+    <div class="scroll-area">
+      <div style="padding:20px 20px 0;">
+        <div class="section-label">Circle back</div>
+
+        <!-- Featured card -->
+        <div class="featured-card">
+          <!-- Photo -->
+          <div class="featured-photo-wrap">
+            <div class="photo-placeholder" style="height:190px;background:#0A3761;">
+              <div class="circle-bg" style="top:-30px;right:-30px;width:130px;height:130px;background:rgba(77,184,232,0.1);"></div>
+              <div class="circle-bg" style="bottom:-20px;left:-20px;width:100px;height:100px;background:rgba(77,184,232,0.07);"></div>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(77,184,232,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span class="photo-label" style="color:rgba(77,184,232,0.6);">BIO 2026</span>
+            </div>
+            <div class="event-overlay">
+              <div class="event-overlay-eyebrow">Featured reflection</div>
+              <div class="event-overlay-name">BIO International Convention</div>
+            </div>
+            <div class="attendee-overlay">
+              <div id="featured-stack"></div>
+              <span>14 attended</span>
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div class="featured-body">
+            <div class="author-row">
+              <div class="avatar" style="width:38px;height:38px;background:#0C4C6F;">
+                <span style="font-size:13px;">MK</span>
+              </div>
+              <div>
+                <div class="author-name">Marcus Kjær</div>
+                <div class="author-company">BioSignal AS</div>
+              </div>
+              <div class="author-date">Apr 22–24, 2026</div>
+            </div>
+
+            <p class="reflection-text">"Three conversations in one afternoon that changed how I'm thinking about our FDA pathway. The informal hallway time was worth more than any session."</p>
+
+            <!-- Details toggle -->
+            <button class="details-toggle" onclick="toggleDetails()">
+              <span id="details-label">Full event details</span>
+              <svg id="details-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#106E9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+
+            <!-- Details panel -->
+            <div class="details-panel" id="details-panel">
+              <div style="padding-bottom:4px;">
+                <div class="meta-pills-row">
+                  <div class="meta-pill">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#5D666F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    San Diego, CA
+                  </div>
+                  <div class="meta-pill">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#5D666F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    14 cohort members
+                  </div>
+                </div>
+                <div class="sessions-label">Sessions</div>
+                <div class="session-row">
+                  <div class="session-time">9:00 AM</div>
+                  <div><div class="session-title">FDA Regulatory Pathways for EU Devices</div><div class="session-speaker">Dr. Pamela Reyes, FDA Office of Device Evaluation</div></div>
+                </div>
+                <div class="session-row">
+                  <div class="session-time">11:30 AM</div>
+                  <div><div class="session-title">Reimbursement Strategy: CPT Coding Fundamentals</div><div class="session-speaker">James Whitmore, CMS Policy Advisor</div></div>
+                </div>
+                <div class="session-row">
+                  <div class="session-time">2:00 PM</div>
+                  <div><div class="session-title">US Distribution &amp; GPO Contracting</div><div class="session-speaker">Sarah Okafor, MedTech Distribution Partners</div></div>
+                </div>
+                <div class="session-row" style="border-bottom:none;">
+                  <div class="session-time">4:30 PM</div>
+                  <div><div class="session-title">Closed CEO Roundtable: Market Entry Lessons</div><div class="session-speaker">Facilitated by CEO XB</div></div>
+                </div>
+                <div class="attended-label">Cohort members who attended</div>
+                <div class="attendee-chips" id="attendee-chips"></div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card-actions">
+              <button class="btn-primary" onclick="openCompose()">Start a post</button>
+              <button class="btn-secondary" onclick="goTo('screen-reflections')">View all reflections</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Up Next teaser -->
+        <button class="upnext-teaser" onclick="goTo('screen-upnext')">
+          <div>
+            <div class="upnext-eyebrow">What's next</div>
+            <div class="upnext-title">All upcoming events</div>
+            <div class="upnext-sub">3 sessions coming up this week</div>
+          </div>
+          <div class="upnext-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <nav class="bottom-nav" id="nav-home">
+      <button class="nav-btn active" onclick="setNav(this,'home')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="nav-label" style="color:#fff;font-weight:500;">Home</span>
+      </button>
+      <button class="nav-btn" onclick="setNav(this,'home')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="nav-label">Learn</span>
+      </button>
+      <button class="nav-btn" onclick="setNav(this,'home')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        <span class="nav-label">Connect</span>
+      </button>
+      <button class="nav-btn" onclick="setNav(this,'home')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="nav-label">Discuss</span>
+      </button>
+      <button class="nav-btn" onclick="setNav(this,'home')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="nav-label">Profile</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN: REFLECTIONS
+  ══════════════════════════════════════ -->
+  <div class="screen" id="screen-reflections">
+    <div class="sub-header">
+      <div class="sub-header-top">
+        <button class="back-btn" onclick="goTo('screen-home')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="logo">ceo <span>XB</span></div>
+      </div>
+      <div class="page-title">Reflections</div>
+      <div class="tabs" style="overflow-x:auto;">
+        <button class="tab-btn active" data-filter="All" onclick="filterReflections(this)">All</button>
+        <button class="tab-btn" data-filter="BIO" onclick="filterReflections(this)">BIO International</button>
+        <button class="tab-btn" data-filter="MedTech" onclick="filterReflections(this)">MedTech Europe</button>
+        <button class="tab-btn" data-filter="AdvaMed" onclick="filterReflections(this)">AdvaMed</button>
+      </div>
+    </div>
+
+    <div class="scroll-area" style="padding-bottom:120px;">
+      <div style="padding:20px 20px 0;" id="reflections-feed"></div>
+    </div>
+
+    <div class="sticky-compose">
+      <button class="btn-primary" style="box-shadow:0 4px 16px rgba(6,44,80,0.25);" onclick="openCompose()">Start a post</button>
+    </div>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" onclick="setNav(this,'reflections')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="nav-label" style="color:#fff;font-weight:500;">Home</span>
+      </button>
+      <button class="nav-btn" onclick="setNav(this,'reflections')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="nav-label">Learn</span>
+      </button>
+      <button class="nav-btn" onclick="setNav(this,'reflections')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        <span class="nav-label">Connect</span>
+      </button>
+      <button class="nav-btn" onclick="setNav(this,'reflections')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="nav-label">Discuss</span>
+      </button>
+      <button class="nav-btn" onclick="setNav(this,'reflections')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="nav-label">Profile</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN: UP NEXT (placeholder)
+  ══════════════════════════════════════ -->
+  <div class="screen" id="screen-upnext">
+    <div class="sub-header">
+      <div class="sub-header-top">
+        <button class="back-btn" onclick="goTo('screen-home')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="logo">ceo <span>XB</span></div>
+      </div>
+      <div class="page-title">Live Now</div>
+      <div class="tabs">
+        <button class="tab-btn active">Events</button>
+        <button class="tab-btn">Milestones</button>
+      </div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;padding-bottom:100px;text-align:center;">
+      <div style="width:64px;height:64px;border-radius:16px;background:#EDF2F7;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5D666F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <div style="font-weight:800;font-size:18px;color:#000;margin-bottom:8px;">Up Next prototype</div>
+      <p style="font-size:14px;color:#5D666F;line-height:1.6;margin-bottom:28px;max-width:260px;">This screen shows live and upcoming events with milestone tracking. Open the Up Next file to explore.</p>
+      <button class="btn-primary" style="padding:13px 28px;width:auto;" onclick="goTo('screen-home')">Back to Home</button>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-btn active">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="nav-label" style="color:#fff;font-weight:500;">Home</span>
+      </button>
+      <button class="nav-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="nav-label">Learn</span></button>
+      <button class="nav-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg><span class="nav-label">Connect</span></button>
+      <button class="nav-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-label">Discuss</span></button>
+      <button class="nav-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Profile</span></button>
+    </nav>
+  </div>
+
+</div><!-- end app -->
+
+<!-- ── Compose sheet ── -->
+<div class="sheet-overlay" id="compose-overlay" onclick="closeCompose()">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-header">
+      <span class="sheet-title">Circle Back</span>
+      <button class="sheet-close" onclick="closeCompose()">&#10005;</button>
+    </div>
+    <div class="compose-event-pill">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5D666F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      BIO International Convention · Apr 22–24
+    </div>
+    <div class="compose-author-row">
+      <div class="avatar" style="width:38px;height:38px;background:#0C4C6F;">
+        <span style="font-size:13px;">SO</span>
+      </div>
+      <div>
+        <div style="font-weight:800;font-size:14px;color:#000;">Sofie Oosterbeek</div>
+        <div style="font-size:12px;color:#5D666F;">CEO, CortiMed BV</div>
+      </div>
+    </div>
+    <p class="compose-prompt">What's one thing you're taking away from the event?</p>
+    <textarea class="compose-textarea" id="compose-text" maxlength="280" placeholder="Share a reflection, question, or follow-up with your cohort…" oninput="onComposeInput()"></textarea>
+    <div class="char-count"><span id="char-count">280 left</span></div>
+    <button class="post-btn" id="post-btn" onclick="submitPost()">Post reflection</button>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Data ──────────────────────────────────────────────
+  const ATTENDEES = [
+    { initials: 'AH', name: 'Annika Halvorsen', company: 'NovaScan Medical', color: '#106E9E' },
+    { initials: 'PB', name: 'Pieter Bosman', company: 'OrthoLink BV', color: '#062C50' },
+    { initials: 'EL', name: 'Elise Laurent', company: 'CardioPath SA', color: '#0C4C6F' },
+    { initials: 'SV', name: 'Sofia Verhoeven', company: 'MedTrace Europe', color: '#106E9E' },
+    { initials: 'TN', name: 'Tobias Nilsson', company: 'PulseFlow AB', color: '#062C50' },
+    { initials: 'FR', name: 'Fiona Rowan', company: 'NeuroAlign Ltd', color: '#0C4C6F' },
+    { initials: 'DM', name: 'Dirk Mertens', company: 'StereoScan GmbH', color: '#106E9E' },
+  ];
+
+  const REFLECTIONS = [
+    { id: 'r1', initials: 'AH', name: 'Annika Halvorsen', company: 'NovaScan Medical', color: '#106E9E', event: 'BIO International Convention', filter: 'BIO', date: 'Apr 24', bg: '#0A3761', accent: '#4DB8E8', photoLabel: 'BIO 2026', text: 'The reimbursement panel finally made CPT coding click for me. We\'ve been approaching this entirely wrong — going back to our team with a completely new framework.', reactions: 7 },
+    { id: 'r2', initials: 'EL', name: 'Elise Laurent', company: 'CardioPath SA', color: '#062C50', event: 'BIO International Convention', filter: 'BIO', date: 'Apr 23', bg: '#062C50', accent: '#106E9E', photoLabel: 'BIO 2026', text: 'Met two potential US distribution partners in one afternoon. The hallway conversations at BIO are worth more than any scheduled session. Already have follow-up calls booked.', reactions: 12 },
+    { id: 'r3', initials: 'TN', name: 'Tobias Nilsson', company: 'PulseFlow AB', color: '#062C50', event: 'MedTech Europe Summit', filter: 'MedTech', date: 'Apr 15', bg: '#0C4C6F', accent: '#4DB8E8', photoLabel: 'MedTech EU', text: 'First time presenting our Series A narrative to US healthcare investors. The feedback was direct and exactly what we needed to tighten the story.', reactions: 5 },
+    { id: 'r4', initials: 'FR', name: 'Fiona Rowan', company: 'NeuroAlign Ltd', color: '#0C4C6F', event: 'MedTech Europe Summit', filter: 'MedTech', date: 'Apr 15', bg: '#0C4C6F', accent: '#4DB8E8', photoLabel: 'MedTech EU', text: 'Surprised by how much the US investors already know about neurotech from Europe. Our differentiation story needs to be sharper — working on it this week.', reactions: 9 },
+    { id: 'r5', initials: 'PB', name: 'Pieter Bosman', company: 'OrthoLink BV', color: '#0C4C6F', event: 'AdvaMed MedTech Conference', filter: 'AdvaMed', date: 'Mar 28', bg: '#0A3761', accent: '#D87903', photoLabel: 'AdvaMed', text: 'The 510(k) pre-submission meeting strategy shared by the former FDA reviewer is something every device CEO needs to hear before they file. Game-changing clarity.', reactions: 14 },
+  ];
+
+  let newReflection = null;
+  let activeFilter = 'All';
+
+  // ── Avatar helpers ─────────────────────────────────────
+  function avatarHTML(initials, color, size) {
+    const fs = Math.round(size * 0.33);
+    return `<div class="avatar" style="width:${size}px;height:${size}px;background:${color};"><span style="font-size:${fs}px;">${initials}</span></div>`;
+  }
+
+  function avatarStackHTML(people, max) {
+    let html = '<div class="avatar-stack">';
+    const visible = people.slice(0, max);
+    const extra = people.length - max;
+    visible.forEach((p, i) => {
+      html += `<div style="margin-left:${i===0?0:-8}px;z-index:${visible.length-i};">${avatarHTML(p.initials, p.color, 28)}</div>`;
+    });
+    if (extra > 0) {
+      html += `<div style="margin-left:-8px;width:28px;height:28px;border-radius:50%;background:#EDF2F7;border:2px solid #fff;display:flex;align-items:center;justify-content:center;"><span style="font-size:9px;font-weight:800;color:#5D666F;">+${extra}</span></div>`;
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // ── Photo placeholder ──────────────────────────────────
+  function photoPlaceholderHTML(bg, accent, label, height) {
+    return `<div class="photo-placeholder" style="height:${height}px;background:${bg};">
+      <div class="circle-bg" style="top:-20px;right:-20px;width:100px;height:100px;background:${accent}18;"></div>
+      <div class="circle-bg" style="bottom:-15px;left:-15px;width:80px;height:80px;background:${accent}12;"></div>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${accent}99" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span class="photo-label" style="color:${accent}99;">${label}</span>
+    </div>`;
+  }
+
+  // ── Reflection card HTML ───────────────────────────────
+  function reflectionCardHTML(r, isNew) {
+    return `<div class="reflection-card${isNew ? ' new-post' : ''}">
+      ${photoPlaceholderHTML(r.bg, r.accent, r.photoLabel, 110)}
+      <div class="reflection-body">
+        <div class="event-pill">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5D666F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          ${r.event}
+        </div>
+        <div class="reflection-author-row">
+          ${avatarHTML(r.initials, r.color, 34)}
+          <div>
+            <div class="ref-author-name">${r.name}</div>
+            <div class="ref-author-meta">${r.company} · ${r.date}</div>
+          </div>
+        </div>
+        <p class="ref-text">"${r.text}"</p>
+        <div class="reactions-row">
+          <div class="reactions-dot"></div>
+          <span class="reactions-label">${r.reactions} cohort members responded</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Render feed ────────────────────────────────────────
+  function renderFeed() {
+    const feed = document.getElementById('reflections-feed');
+    let html = '';
+
+    if (newReflection && (activeFilter === 'All' || activeFilter === 'BIO')) {
+      html += `<div class="just-posted-label">
+        <div class="just-posted-dot"></div>
+        <span class="just-posted-text">Just posted</span>
+      </div>`;
+      html += reflectionCardHTML({ initials: 'SO', name: 'Sofie Oosterbeek', company: 'CortiMed BV', color: '#0C4C6F', event: 'BIO International Convention', date: 'Just now', bg: '#0A3761', accent: '#4DB8E8', photoLabel: 'BIO 2026', text: newReflection, reactions: 0 }, true);
+    }
+
+    const filtered = activeFilter === 'All'
+      ? REFLECTIONS
+      : REFLECTIONS.filter(r => r.filter === activeFilter);
+
+    filtered.forEach(r => { html += reflectionCardHTML(r, false); });
+    feed.innerHTML = html;
+  }
+
+  // ── Build static elements on load ─────────────────────
+  function buildPage() {
+    // Featured attendee stack
+    document.getElementById('featured-stack').innerHTML = avatarStackHTML(ATTENDEES, 4);
+    // Attendee chips in details panel
+    const chips = document.getElementById('attendee-chips');
+    chips.innerHTML = ATTENDEES.map(a =>
+      `<div class="attendee-chip">${avatarHTML(a.initials, a.color, 22)}<span>${a.name.split(' ')[0]}</span></div>`
+    ).join('');
+    renderFeed();
+  }
+  buildPage();
+
+  // ── Screen navigation ──────────────────────────────────
+  function goTo(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    const sa = document.querySelector('#' + id + ' .scroll-area');
+    if (sa) sa.scrollTop = 0;
+    if (id === 'screen-reflections') renderFeed();
+  }
+
+  // ── Details expand ─────────────────────────────────────
+  function toggleDetails() {
+    const panel = document.getElementById('details-panel');
+    const chevron = document.getElementById('details-chevron');
+    const open = panel.classList.toggle('open');
+    chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+    chevron.style.transition = 'transform 0.25s ease';
+  }
+
+  // ── Filter reflections ─────────────────────────────────
+  function filterReflections(btn) {
+    document.querySelectorAll('#screen-reflections .tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    renderFeed();
+  }
+
+  // ── Compose sheet ──────────────────────────────────────
+  function openCompose() {
+    document.getElementById('compose-overlay').classList.add('open');
+  }
+  function closeCompose() {
+    document.getElementById('compose-overlay').classList.remove('open');
+  }
+  function onComposeInput() {
+    const ta = document.getElementById('compose-text');
+    const remaining = 280 - ta.value.length;
+    const countEl = document.getElementById('char-count');
+    countEl.textContent = remaining + ' left';
+    countEl.style.color = remaining < 40 ? '#D87903' : '#5D666F';
+    const btn = document.getElementById('post-btn');
+    if (ta.value.trim().length > 0) btn.classList.add('enabled');
+    else btn.classList.remove('enabled');
+  }
+  function submitPost() {
+    const ta = document.getElementById('compose-text');
+    if (!ta.value.trim()) return;
+    newReflection = ta.value.trim();
+    ta.value = '';
+    document.getElementById('char-count').textContent = '280 left';
+    document.getElementById('post-btn').classList.remove('enabled');
+    closeCompose();
+    goTo('screen-reflections');
+    showToast('Reflection posted.');
+  }
+
+  // ── Bottom nav ─────────────────────────────────────────
+  function setNav(btn, screen) {
+    const nav = btn.closest('.bottom-nav');
+    nav.querySelectorAll('.nav-btn').forEach(b => {
+      b.classList.remove('active');
+      b.querySelector('svg').setAttribute('stroke', 'rgba(255,255,255,0.45)');
+      b.querySelector('svg').setAttribute('stroke-width', '1.5');
+      const label = b.querySelector('.nav-label');
+      label.style.color = '';
+      label.style.fontWeight = '';
+    });
+    btn.classList.add('active');
+    btn.querySelector('svg').setAttribute('stroke', '#fff');
+    btn.querySelector('svg').setAttribute('stroke-width', '2');
+    btn.querySelector('.nav-label').style.color = '#fff';
+    btn.querySelector('.nav-label').style.fontWeight = '500';
+  }
+
+  // ── Toast ──────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+</script>
+</body>
+</html>
