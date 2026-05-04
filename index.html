@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEO XB — Circle Back</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #CBD5E0; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
+
+  .app { width: 100%; max-width: 390px; min-height: 100vh; background: #F7F9FB; position: relative; display: flex; flex-direction: column; overflow: hidden; }
+
+  .screen { display: none; flex-direction: column; flex: 1; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  .scroll-area { flex: 1; overflow-y: auto; padding-bottom: 88px; }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* Header */
+  .header { background: #062C50; padding: 48px 20px 20px; flex-shrink: 0; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .logo { color: #fff; font-weight: 800; font-size: 20px; letter-spacing: -0.3px; }
+  .logo span { color: #4DB8E8; }
+  .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #106E9E; display: flex; align-items: center; justify-content: center; }
+  .user-avatar span { color: #fff; font-weight: 800; font-size: 12px; }
+
+  /* Sub-header with back */
+  .sub-header { background: #062C50; padding: 48px 20px 20px; flex-shrink: 0; }
+  .sub-header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .back-btn { width: 36px; height: 36px; border-radius: 9999px; background: rgba(255,255,255,0.12); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+  .page-title { font-weight: 800; font-size: 26px; color: #fff; letter-spacing: -0.4px; margin-bottom: 4px; }
+  .page-subtitle { font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 400; }
+
+  /* Avatar */
+  .avatar { border-radius: 50%; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .avatar span { color: #fff; font-weight: 800; line-height: 1; }
+
+  /* Avatar stack */
+  .avatar-stack { display: flex; }
+
+  /* Section label */
+  .section-label { font-size: 11px; font-weight: 800; color: #5D666F; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+
+  /* Meta pill */
+  .meta-pill { display: inline-flex; align-items: center; gap: 5px; background: #EDF2F7; border-radius: 9999px; padding: 4px 10px; font-size: 12px; color: #5D666F; }
+
+  /* Prompt card */
+  .prompt-card { background: #062C50; border-radius: 16px; padding: 20px; margin-bottom: 20px; position: relative; overflow: hidden; }
+  .prompt-card::after { content: ''; position: absolute; right: -24px; top: -24px; width: 120px; height: 120px; border-radius: 50%; background: rgba(77,184,232,0.07); pointer-events: none; }
+  .prompt-eyebrow { font-size: 11px; font-weight: 800; color: #4DB8E8; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .prompt-question { font-size: 18px; font-weight: 800; color: #fff; line-height: 1.4; letter-spacing: -0.2px; margin-bottom: 16px; }
+  .prompt-meta { font-size: 13px; color: rgba(255,255,255,0.55); margin-bottom: 20px; line-height: 1.5; }
+
+  /* State A: Start a post button */
+  .prompt-btn { width: 100%; background: #fff; color: #062C50; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 15px; padding: 13px; border-radius: 9999px; border: none; cursor: pointer; min-height: 48px; transition: background 0.15s; }
+
+  /* State B: Chips + textarea (hidden until tapped) */
+  .compose-state { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.35s ease, opacity 0.25s ease; }
+  .compose-state.open { max-height: 600px; opacity: 1; }
+
+  .chips-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .seed-chip { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.2); border-radius: 9999px; padding: 7px 14px; cursor: pointer; transition: all 0.15s; min-height: 36px; }
+  .seed-chip.used { background: #fff; color: #062C50; border-color: #fff; }
+
+  .compose-textarea { width: 100%; min-height: 100px; background: rgba(255,255,255,0.1); border: 1.5px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 12px 14px; font-size: 15px; font-family: 'Plus Jakarta Sans', sans-serif; color: #fff; resize: none; outline: none; line-height: 1.55; transition: border-color 0.15s; margin-bottom: 10px; }
+  .compose-textarea::placeholder { color: rgba(255,255,255,0.4); }
+  .compose-textarea:focus { border-color: rgba(255,255,255,0.5); }
+
+  .compose-footer { display: flex; justify-content: space-between; align-items: center; }
+  .char-count { font-size: 12px; color: rgba(255,255,255,0.45); }
+  .post-btn { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.45); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 14px; padding: 10px 24px; border-radius: 9999px; border: none; cursor: not-allowed; min-height: 40px; transition: all 0.15s; }
+  .post-btn.enabled { background: #fff; color: #062C50; cursor: pointer; }
+
+  /* Featured reflection */
+  .featured-wrap { background: #fff; border-radius: 16px; border: 1px solid #DDE3EA; padding: 20px; margin-bottom: 20px; }
+  .quote-mark { font-size: 52px; line-height: 0.9; color: #EDF2F7; font-weight: 800; margin-bottom: 4px; }
+  .quote-text { font-size: 17px; font-weight: 800; color: #000; line-height: 1.5; letter-spacing: -0.2px; margin-bottom: 16px; }
+  .quote-author { display: flex; align-items: center; gap: 10px; padding-top: 14px; border-top: 1px solid #EDF2F7; }
+  .quote-author-name { font-weight: 800; font-size: 14px; color: #000; }
+  .quote-author-meta { font-size: 12px; color: #5D666F; margin-top: 1px; }
+
+  /* Reflection feed card */
+  .ref-card { background: #fff; border-radius: 16px; border: 1px solid #DDE3EA; padding: 16px; margin-bottom: 12px; }
+  .ref-card.new-post { border-color: #4DB8E8; }
+  .ref-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+  .ref-author-name { font-weight: 800; font-size: 14px; color: #000; line-height: 1.3; }
+  .ref-author-meta { font-size: 12px; color: #5D666F; margin-top: 2px; }
+  .ref-text { font-size: 15px; color: #000; line-height: 1.65; margin-bottom: 14px; }
+  .ref-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid #EDF2F7; }
+  .ref-reactions { font-size: 12px; color: #5D666F; }
+  .resonate-btn { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 500; color: #5D666F; background: none; border: 1.5px solid #DDE3EA; border-radius: 9999px; padding: 6px 14px; cursor: pointer; min-height: 34px; transition: all 0.15s; }
+  .resonate-btn.active { background: #062C50; color: #fff; border-color: #062C50; }
+
+  /* Just posted indicator */
+  .just-posted { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .just-posted-dot { width: 6px; height: 6px; border-radius: 50%; background: #4DB8E8; }
+  .just-posted-text { font-size: 11px; font-weight: 800; color: #4DB8E8; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* Event details accordion */
+  .event-details-card { background: #fff; border-radius: 16px; border: 1px solid #DDE3EA; overflow: hidden; margin-bottom: 20px; }
+  .event-details-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 16px; background: none; border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .event-details-label { font-weight: 800; font-size: 15px; color: #000; }
+  .event-details-body { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.35s ease, opacity 0.25s ease; }
+  .event-details-body.open { max-height: 600px; opacity: 1; }
+  .sessions-label { font-size: 11px; font-weight: 800; color: #5D666F; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+  .session-row { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #EDF2F7; }
+  .session-row:last-child { border-bottom: none; }
+  .session-time { width: 52px; flex-shrink: 0; font-size: 11px; color: #5D666F; font-weight: 500; padding-top: 2px; }
+  .session-title { font-size: 13px; font-weight: 800; color: #000; line-height: 1.35; margin-bottom: 2px; }
+  .session-speaker { font-size: 12px; color: #5D666F; }
+  .attendee-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .attendee-chip { display: flex; align-items: center; gap: 6px; background: #EDF2F7; border-radius: 9999px; padding: 4px 10px 4px 5px; font-size: 12px; font-weight: 500; color: #000; }
+
+  /* Bottom nav */
+  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 390px; background: #0A3761; display: flex; z-index: 50; }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0 18px; gap: 3px; min-height: 64px; position: relative; background: none; border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .nav-btn.active::before { content: ''; position: absolute; top: 0; left: 25%; right: 25%; height: 2px; background: #106E9E; border-radius: 0 0 2px 2px; }
+  .nav-label { font-size: 11px; color: rgba(255,255,255,0.45); font-weight: 400; }
+  .nav-btn.active .nav-label { color: #fff; font-weight: 500; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%); background: #062C50; color: #fff; font-size: 14px; font-weight: 500; padding: 10px 20px; border-radius: 9999px; white-space: nowrap; pointer-events: none; z-index: 300; opacity: 0; transition: opacity 0.2s; }
+  .toast.show { opacity: 1; }
+
+  svg { display: inline-block; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══════════════════════════════════════
+       SCREEN: EVENT PAGE (default)
+  ══════════════════════════════════════ -->
+  <div class="screen active" id="screen-event">
+
+    <div class="sub-header">
+      <div class="sub-header-top">
+        <button class="back-btn" onclick="goTo('screen-home')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="logo">ceo <span>XB</span></div>
+      </div>
+      <div class="page-title">BIO International</div>
+      <div class="page-subtitle">San Diego · Apr 22–24, 2026 · 14 cohort members attended</div>
+    </div>
+
+    <div class="scroll-area">
+      <div style="padding:20px 20px 0;">
+
+        <!-- Prompt card -->
+        <div class="prompt-card">
+          <div class="prompt-eyebrow">Circle back</div>
+          <div class="prompt-question">You attended BIO International. What's one thing you're taking away?</div>
+          <div class="prompt-meta">14 cohort members were there. Share what stayed with you — it takes 2 minutes.</div>
+
+          <!-- State A: button -->
+          <div id="prompt-btn-wrap">
+            <button class="prompt-btn" onclick="openCompose()">Start a post</button>
+          </div>
+
+          <!-- State B: chips + compose (hidden until tapped) -->
+          <div class="compose-state" id="compose-state">
+            <div class="chips-row" id="seed-chips">
+              <button class="seed-chip" onclick="seedText(this, 'I came away with a new contact in FDA regulatory affairs worth following up with.')">A new FDA contact</button>
+              <button class="seed-chip" onclick="seedText(this, 'The reimbursement session reframed how I\'m thinking about our CPT coding strategy.')">A reimbursement insight</button>
+              <button class="seed-chip" onclick="seedText(this, 'I have a follow-up conversation booked that could open a door for us in the US market.')">A follow-up conversation</button>
+              <button class="seed-chip" onclick="seedText(this, 'I\'m still sitting with a question about our US distribution strategy that I don\'t have an answer to yet.')">A question I'm still sitting with</button>
+            </div>
+            <textarea class="compose-textarea" id="compose-text" maxlength="280" placeholder="Share a reflection, question, or follow-up with your cohort…" oninput="onComposeInput()"></textarea>
+            <div class="compose-footer">
+              <span class="char-count" id="char-count">280 left</span>
+              <button class="post-btn" id="post-btn" onclick="submitPost()">Post</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Featured reflection -->
+        <div class="section-label">Featured reflection</div>
+        <div class="featured-wrap">
+          <div class="quote-mark">"</div>
+          <p class="quote-text">Three conversations in one afternoon that changed how I'm thinking about our FDA pathway. The informal hallway time was worth more than any session.</p>
+          <div class="quote-author">
+            <div class="avatar" style="width:40px;height:40px;background:#0C4C6F;">
+              <span style="font-size:14px;">MK</span>
+            </div>
+            <div>
+              <div class="quote-author-name">Marcus Kjær</div>
+              <div class="quote-author-meta">CEO, BioSignal AS · Apr 24</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cohort reflections feed -->
+        <div class="section-label">From your cohort</div>
+        <div id="event-feed"></div>
+
+        <!-- Event details — collapsed by default -->
+        <div class="event-details-card">
+          <button class="event-details-toggle" onclick="toggleEventDetails()">
+            <span class="event-details-label">About this event</span>
+            <svg id="event-details-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5D666F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.25s ease;"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="event-details-body" id="event-details-body">
+            <div style="padding:0 16px 16px;">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+                <div class="meta-pill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#5D666F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Apr 22–24, 2026</div>
+                <div class="meta-pill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#5D666F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>San Diego, CA</div>
+                <div class="meta-pill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#5D666F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>14 cohort members</div>
+              </div>
+              <div class="sessions-label">Sessions</div>
+              <div class="session-row"><div class="session-time">9:00 AM</div><div><div class="session-title">FDA Regulatory Pathways for EU Devices</div><div class="session-speaker">Dr. Pamela Reyes, FDA Office of Device Evaluation</div></div></div>
+              <div class="session-row"><div class="session-time">11:30 AM</div><div><div class="session-title">Reimbursement Strategy: CPT Coding Fundamentals</div><div class="session-speaker">James Whitmore, CMS Policy Advisor</div></div></div>
+              <div class="session-row"><div class="session-time">2:00 PM</div><div><div class="session-title">US Distribution &amp; GPO Contracting</div><div class="session-speaker">Sarah Okafor, MedTech Distribution Partners</div></div></div>
+              <div class="session-row"><div class="session-time">4:30 PM</div><div><div class="session-title">Closed CEO Roundtable: Market Entry Lessons</div><div class="session-speaker">Facilitated by CEO XB</div></div></div>
+              <div style="font-size:11px;font-weight:800;color:#5D666F;letter-spacing:0.08em;text-transform:uppercase;margin:14px 0 10px;">Cohort members who attended</div>
+              <div class="attendee-chips" id="attendee-chips"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="nav-label" style="color:#fff;font-weight:500;">Home</span>
+      </button>
+      <button class="nav-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="nav-label">Learn</span></button>
+      <button class="nav-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg><span class="nav-label">Connect</span></button>
+      <button class="nav-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-label">Discuss</span></button>
+      <button class="nav-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Profile</span></button>
+    </nav>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN: HOME (entry point)
+  ══════════════════════════════════════ -->
+  <div class="screen" id="screen-home">
+    <div class="header">
+      <div class="header-top">
+        <div class="logo">ceo <span>XB</span></div>
+        <div class="user-avatar"><span>SO</span></div>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div style="padding:20px;">
+        <!-- Teaser card linking to event page -->
+        <div style="background:#fff;border-radius:16px;border:1px solid #DDE3EA;overflow:hidden;cursor:pointer;" onclick="goTo('screen-event')">
+          <div style="background:#062C50;padding:16px 20px;">
+            <div style="font-size:11px;font-weight:800;color:#4DB8E8;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">What people are saying</div>
+            <div style="font-size:17px;font-weight:800;color:#fff;line-height:1.35;">BIO International Convention</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.55);margin-top:3px;">San Diego · Apr 22–24, 2026</div>
+          </div>
+          <div style="padding:16px 20px;">
+            <div style="font-size:52px;line-height:0.9;color:#EDF2F7;font-weight:800;margin-bottom:4px;">"</div>
+            <p style="font-size:16px;font-weight:800;color:#000;line-height:1.45;letter-spacing:-0.2px;margin-bottom:14px;">Three conversations in one afternoon that changed how I'm thinking about our FDA pathway.</p>
+            <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #EDF2F7;">
+              <div class="avatar" style="width:32px;height:32px;background:#0C4C6F;"><span style="font-size:11px;">MK</span></div>
+              <div style="flex:1;">
+                <div style="font-weight:800;font-size:13px;color:#000;">Marcus Kjær · BioSignal AS</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:4px;color:#106E9E;">
+                <span style="font-size:13px;font-weight:500;">7 reflections</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#106E9E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-btn active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label" style="color:#fff;font-weight:500;">Home</span></button>
+      <button class="nav-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="nav-label">Learn</span></button>
+      <button class="nav-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg><span class="nav-label">Connect</span></button>
+      <button class="nav-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-label">Discuss</span></button>
+      <button class="nav-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Profile</span></button>
+    </nav>
+  </div>
+
+</div><!-- end app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Data ─────────────────────────────────────────────────
+  const ATTENDEES = [
+    { initials: 'AH', name: 'Annika Halvorsen', company: 'NovaScan Medical', color: '#106E9E' },
+    { initials: 'PB', name: 'Pieter Bosman', company: 'OrthoLink BV', color: '#062C50' },
+    { initials: 'EL', name: 'Elise Laurent', company: 'CardioPath SA', color: '#0C4C6F' },
+    { initials: 'SV', name: 'Sofia Verhoeven', company: 'MedTrace Europe', color: '#106E9E' },
+    { initials: 'TN', name: 'Tobias Nilsson', company: 'PulseFlow AB', color: '#062C50' },
+    { initials: 'FR', name: 'Fiona Rowan', company: 'NeuroAlign Ltd', color: '#0C4C6F' },
+    { initials: 'DM', name: 'Dirk Mertens', company: 'StereoScan GmbH', color: '#106E9E' },
+  ];
+
+  const REFLECTIONS = [
+    { initials: 'AH', name: 'Annika Halvorsen', company: 'NovaScan Medical', color: '#106E9E', date: 'Apr 24', text: 'The reimbursement panel finally made CPT coding click for me. We\'ve been approaching this entirely wrong — going back to our team with a completely new framework.', reactions: 7 },
+    { initials: 'EL', name: 'Elise Laurent', company: 'CardioPath SA', color: '#062C50', date: 'Apr 23', text: 'Met two potential US distribution partners in one afternoon. The hallway conversations at BIO are worth more than any scheduled session. Already have follow-up calls booked.', reactions: 12 },
+    { initials: 'TN', name: 'Tobias Nilsson', company: 'PulseFlow AB', color: '#062C50', date: 'Apr 23', text: 'First time presenting our Series A narrative to US healthcare investors. The feedback was direct and exactly what we needed to tighten the story.', reactions: 5 },
+  ];
+
+  let newReflection = null;
+
+  // ── Helpers ───────────────────────────────────────────────
+  function avatarHTML(initials, color, size) {
+    const fs = Math.round(size * 0.33);
+    return `<div class="avatar" style="width:${size}px;height:${size}px;background:${color};"><span style="font-size:${fs}px;">${initials}</span></div>`;
+  }
+
+  function refCardHTML(r, isNew) {
+    return `<div class="ref-card${isNew ? ' new-post' : ''}">
+      <div class="ref-header">
+        ${avatarHTML(r.initials, r.color, 40)}
+        <div>
+          <div class="ref-author-name">${r.name}</div>
+          <div class="ref-author-meta">${r.company} · ${r.date}</div>
+        </div>
+      </div>
+      <p class="ref-text">"${r.text}"</p>
+      <div class="ref-footer">
+        <span class="ref-reactions">${r.reactions > 0 ? r.reactions + ' cohort members responded' : 'Be the first to respond'}</span>
+        <button class="resonate-btn" onclick="toggleResonate(this)" data-active="false">This resonates</button>
+      </div>
+    </div>`;
+  }
+
+  // ── Build page ────────────────────────────────────────────
+  function buildPage() {
+    // Attendee chips
+    const chips = document.getElementById('attendee-chips');
+    if (chips) chips.innerHTML = ATTENDEES.map(a =>
+      `<div class="attendee-chip">${avatarHTML(a.initials, a.color, 22)}<span>${a.name.split(' ')[0]}</span></div>`
+    ).join('');
+
+    renderFeed();
+  }
+
+  function renderFeed() {
+    const feed = document.getElementById('event-feed');
+    if (!feed) return;
+    let html = '';
+    if (newReflection) {
+      html += `<div class="just-posted"><div class="just-posted-dot"></div><span class="just-posted-text">Just posted</span></div>`;
+      html += refCardHTML({ initials: 'SO', name: 'Sofie Oosterbeek', company: 'CortiMed BV', color: '#0C4C6F', date: 'Just now', text: newReflection, reactions: 0 }, true);
+    }
+    html += REFLECTIONS.map(r => refCardHTML(r, false)).join('');
+    feed.innerHTML = html;
+  }
+
+  buildPage();
+
+  // ── Navigation ────────────────────────────────────────────
+  function goTo(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    const sa = document.querySelector('#' + id + ' .scroll-area');
+    if (sa) sa.scrollTop = 0;
+  }
+
+  // ── Compose ───────────────────────────────────────────────
+  function openCompose() {
+    document.getElementById('prompt-btn-wrap').style.display = 'none';
+    const state = document.getElementById('compose-state');
+    state.classList.add('open');
+    setTimeout(() => document.getElementById('compose-text').focus(), 50);
+  }
+
+  function seedText(chip, text) {
+    document.querySelectorAll('#seed-chips .seed-chip').forEach(c => c.classList.remove('used'));
+    chip.classList.add('used');
+    const ta = document.getElementById('compose-text');
+    ta.value = text;
+    ta.selectionStart = ta.selectionEnd = ta.value.length;
+    onComposeInput();
+    ta.focus();
+  }
+
+  function onComposeInput() {
+    const ta = document.getElementById('compose-text');
+    const remaining = 280 - ta.value.length;
+    const countEl = document.getElementById('char-count');
+    countEl.textContent = remaining + ' left';
+    countEl.style.color = remaining < 40 ? '#D87903' : 'rgba(255,255,255,0.45)';
+    const btn = document.getElementById('post-btn');
+    const active = ta.value.trim().length > 0;
+    btn.classList.toggle('enabled', active);
+    btn.style.cursor = active ? 'pointer' : 'not-allowed';
+  }
+
+  function submitPost() {
+    const ta = document.getElementById('compose-text');
+    if (!ta.value.trim()) return;
+    newReflection = ta.value.trim();
+
+    // Reset compose
+    ta.value = '';
+    document.getElementById('char-count').textContent = '280 left';
+    document.getElementById('post-btn').classList.remove('enabled');
+    document.querySelectorAll('#seed-chips .seed-chip').forEach(c => c.classList.remove('used'));
+    document.getElementById('compose-state').classList.remove('open');
+    document.getElementById('prompt-btn-wrap').style.display = 'block';
+
+    renderFeed();
+    showToast('Reflection posted.');
+  }
+
+  // ── Reactions ─────────────────────────────────────────────
+  function toggleResonate(btn) {
+    const active = btn.dataset.active === 'true';
+    btn.dataset.active = !active;
+    btn.classList.toggle('active', !active);
+    showToast(!active ? 'Marked as resonating.' : 'Removed.');
+  }
+
+  // ── Event details ─────────────────────────────────────────
+  function toggleEventDetails() {
+    const body = document.getElementById('event-details-body');
+    const chev = document.getElementById('event-details-chevron');
+    const open = body.classList.toggle('open');
+    chev.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+  }
+
+  // ── Toast ─────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+</script>
+</body>
+</html>
